@@ -12,21 +12,25 @@ import Maybe exposing (withDefault)
 ---- MODEL ----
 
 
-{-| TODO
--}
 type alias Model =
     { word : String
-    , searchType : String
+    , filterType : FilterType
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { word = ""
-      , searchType = "head"
+      , filterType = Head
       }
     , Cmd.none
     )
+
+
+type FilterType
+    = Head
+    | Tail
+    | In
 
 
 
@@ -35,7 +39,7 @@ init _ =
 
 type Msg
     = SearchWord String
-    | ChangeType String
+    | ChangeFilterType FilterType
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -44,8 +48,8 @@ update msg model =
         SearchWord w ->
             ( { model | word = w }, Cmd.none )
 
-        ChangeType t ->
-            ( { model | searchType = t }, Cmd.none )
+        ChangeFilterType t ->
+            ( { model | filterType = t }, Cmd.none )
 
 
 
@@ -53,50 +57,53 @@ update msg model =
 
 
 view : Model -> Html Msg
-view { word, searchType } =
+view { word, filterType } =
     let
-        filterWord =
-            if searchType == "head" then
-                List.filter (\w -> startsWith word w) words
-            else if searchType == "in" then
-                List.filter (\w -> contains word w) words
-            else
-                List.filter (\w -> endsWith word w) words
+        filterWords =
+            case filterType of
+                Head ->
+                    List.filter (\w -> startsWith word w) words
+
+                In ->
+                    List.filter (\w -> contains word w) words
+
+                Tail ->
+                    List.filter (\w -> endsWith word w) words
     in
         div []
             [ h1 [] [ text "Incremental Search" ]
             , input [ id "searchWord", placeholder "Search...", onInput (\s -> SearchWord s) ] []
             , div []
                 [ label []
-                    [ input [ type_ "radio", name "typeGroup", onClick (ChangeType "head") ] []
+                    [ input [ type_ "radio", name "typeGroup", onClick (ChangeFilterType Head) ] []
                     , span [] [ text "前方一致" ]
                     ]
                 , label []
-                    [ input [ type_ "radio", name "typeGroup", onClick (ChangeType "in") ] []
+                    [ input [ type_ "radio", name "typeGroup", onClick (ChangeFilterType In) ] []
                     , span [] [ text "部分一致" ]
                     ]
                 , label []
-                    [ input [ type_ "radio", name "typeGroup", onClick (ChangeType "tail") ] []
+                    [ input [ type_ "radio", name "typeGroup", onClick (ChangeFilterType Tail) ] []
                     , span [] [ text "後方一致" ]
                     ]
                 ]
-            , ul [] (list2li filterWord word searchType)
-            , p [] [ text (append "対象件数: " (append (fromInt (length filterWord)) "件")) ]
+            , ul [] (list2li filterWords word filterType)
+            , p [] [ text (append "対象件数: " (append (fromInt (length filterWords)) "件")) ]
             ]
 
 
-list2li : List String -> String -> String -> List (Html msg)
+list2li : List String -> String -> FilterType -> List (Html msg)
 list2li lst word type_ =
     List.map (\w -> li [] [ (strongWord w word type_) ]) lst
 
 
-strongWord : String -> String -> String -> Html msg
+strongWord : String -> String -> FilterType -> Html msg
 strongWord str word type_ =
     let
         pos =
             indexes word str
                 |> (\lst ->
-                        if type_ == "tail" then
+                        if type_ == Tail then
                             head <| reverse lst
                         else
                             head lst
