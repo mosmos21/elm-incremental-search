@@ -1,10 +1,12 @@
 module Main exposing (Model, Msg(..), init, main, update, view)
 
 import Browser
-import Html exposing (Attribute, Html, div, h1, input, li, strong, text, ul)
-import Html.Attributes exposing (placeholder, value)
-import Html.Events exposing (onInput)
-
+import Html exposing (Attribute, Html, div, h1, input, li, strong, text, ul, p, span, label)
+import Html.Attributes exposing (placeholder, value, type_, name, id, checked)
+import Html.Events exposing (onInput, onClick)
+import String exposing (startsWith, contains, endsWith, fromInt, append, left, dropLeft, indexes, length)
+import List exposing (length, head, reverse)
+import Maybe exposing (withDefault)
 
 
 ---- MODEL ----
@@ -13,29 +15,37 @@ import Html.Events exposing (onInput)
 {-| TODO
 -}
 type alias Model =
-    ()
+    { word : String
+    , searchType : String
+    }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( (), Cmd.none )
+    ( { word = ""
+      , searchType = "head"
+      }
+    , Cmd.none
+    )
 
 
 
 ---- UPDATE ----
 
 
-{-| TODO
--}
 type Msg
-    = NoOp
+    = SearchWord String
+    | ChangeType String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NoOp ->
-            ( model, Cmd.none )
+        SearchWord w ->
+            ( { model | word = w }, Cmd.none )
+
+        ChangeType t ->
+            ( { model | searchType = t }, Cmd.none )
 
 
 
@@ -43,18 +53,61 @@ update msg model =
 
 
 view : Model -> Html Msg
-view model =
-    div []
-        [ h1 [] [ text "Incremental Search" ]
-        , input [ placeholder "Search..." ] []
-
-        -- empty list pattern -> ul [ class "empty" ] []
-        , ul []
-            [ li [] [ text "foo" ]
-            , li [] [ text "bar" ]
-            , li [] [ text "hoge" ]
+view { word, searchType } =
+    let
+        filterWord =
+            if searchType == "head" then
+                List.filter (\w -> startsWith word w) words
+            else if searchType == "in" then
+                List.filter (\w -> contains word w) words
+            else
+                List.filter (\w -> endsWith word w) words
+    in
+        div []
+            [ h1 [] [ text "Incremental Search" ]
+            , input [ id "searchWord", placeholder "Search...", onInput (\s -> SearchWord s) ] []
+            , div []
+                [ label []
+                    [ input [ type_ "radio", name "typeGroup", onClick (ChangeType "head") ] []
+                    , span [] [ text "前方一致" ]
+                    ]
+                , label []
+                    [ input [ type_ "radio", name "typeGroup", onClick (ChangeType "in") ] []
+                    , span [] [ text "部分一致" ]
+                    ]
+                , label []
+                    [ input [ type_ "radio", name "typeGroup", onClick (ChangeType "tail") ] []
+                    , span [] [ text "後方一致" ]
+                    ]
+                ]
+            , ul [] (list2li filterWord word searchType)
+            , p [] [ text (append "対象件数: " (append (fromInt (length filterWord)) "件")) ]
             ]
-        ]
+
+
+list2li : List String -> String -> String -> List (Html msg)
+list2li lst word type_ =
+    List.map (\w -> li [] [ (strongWord w word type_) ]) lst
+
+
+strongWord : String -> String -> String -> Html msg
+strongWord str word type_ =
+    let
+        pos =
+            indexes word str
+                |> (\lst ->
+                        if type_ == "tail" then
+                            head <| reverse lst
+                        else
+                            head lst
+                   )
+                |> withDefault 0
+    in
+        span []
+            [ text (left pos str)
+            , strong [] [ text word ]
+            , text (dropLeft (pos + (String.length word)) str)
+            ]
 
 
 main =
