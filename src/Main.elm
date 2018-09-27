@@ -4,9 +4,9 @@ import Browser
 import Html exposing (Attribute, Html, div, h1, input, li, strong, text, ul, p, span, label)
 import Html.Attributes exposing (placeholder, value, type_, name, id, checked)
 import Html.Events exposing (onInput, onClick)
-import String exposing (startsWith, contains, endsWith, fromInt, append, left, dropLeft, indexes, length)
-import List exposing (length, head, reverse)
-import Maybe exposing (withDefault)
+import String
+import List
+import Maybe
 
 
 ---- MODEL ----
@@ -62,13 +62,13 @@ view { word, filterType } =
         filterWords =
             case filterType of
                 Head ->
-                    List.filter (\w -> startsWith word w) words
+                    List.filter (\w -> String.startsWith word w) words
 
                 In ->
-                    List.filter (\w -> contains word w) words
+                    List.filter (\w -> String.contains word w) words
 
                 Tail ->
-                    List.filter (\w -> endsWith word w) words
+                    List.filter (\w -> String.endsWith word w) words
     in
         div []
             [ h1 [] [ text "Incremental Search" ]
@@ -88,7 +88,7 @@ view { word, filterType } =
                     ]
                 ]
             , ul [] (list2li filterWords word filterType)
-            , p [] [ text (append "対象件数: " (append (fromInt (length filterWords)) "件")) ]
+            , p [] [ text <| "対象件数: " ++ (String.fromInt (List.length filterWords)) ++ "件" ]
             ]
 
 
@@ -101,19 +101,19 @@ strongWord : String -> String -> FilterType -> Html msg
 strongWord str word type_ =
     let
         pos =
-            indexes word str
+            String.indexes word str
                 |> (\lst ->
                         if type_ == Tail then
-                            head <| reverse lst
+                            List.head <| List.reverse lst
                         else
-                            head lst
+                            List.head lst
                    )
-                |> withDefault 0
+                |> Maybe.withDefault 0
     in
         span []
-            [ text (left pos str)
+            [ text (String.left pos str)
             , strong [] [ text word ]
-            , text (dropLeft (pos + (String.length word)) str)
+            , text (String.dropLeft (pos + (String.length word)) str)
             ]
 
 
