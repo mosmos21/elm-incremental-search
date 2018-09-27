@@ -87,18 +87,18 @@ view { word, filterType } =
                     , span [] [ text "後方一致" ]
                     ]
                 ]
-            , ul [] (list2li filterWords word filterType)
+            , ul [] (list2li filterType word filterWords)
             , p [] [ text <| "対象件数: " ++ (String.fromInt (List.length filterWords)) ++ "件" ]
             ]
 
 
-list2li : List String -> String -> FilterType -> List (Html msg)
-list2li lst word type_ =
-    List.map (\w -> li [] [ (strongWord w word type_) ]) lst
+list2li : FilterType -> String -> List String -> List (Html Msg)
+list2li type_ word lst =
+    List.map (\w -> li [] [ (strongWord type_ word w) ]) lst
 
 
-strongWord : String -> String -> FilterType -> Html msg
-strongWord str word type_ =
+strongWord : FilterType -> String -> String -> Html msg
+strongWord type_ word str =
     let
         pos =
             String.indexes word str
